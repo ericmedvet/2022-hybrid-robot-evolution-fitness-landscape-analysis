@@ -44,7 +44,7 @@ experiment(
   ];
   qExtractor = e.locomotionXVelocity();
   bestFileSaver = fileSaver(
-    fileName = "./results.txt";
+    fileName = "./results-evo.txt";
     serializer = ser.javaSerializer()
   );
   videoSaver = videoSaver(drawer = d.basicWithAgentMiniature(); w = 600; h = 400);

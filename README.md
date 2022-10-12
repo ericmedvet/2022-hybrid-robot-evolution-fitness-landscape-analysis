@@ -37,7 +37,7 @@ It is reasonable to set a number that is equal to the number of cores on your ma
 
 Running this experiments on our machine (Intel(R) Xeon(R) W-2295 CPU @ 3.00GHz with 64GB RAM) took approx 72h.
 
-The outcome of the experiment is the CSV file named [`results.txt`](phase-1/results.txt).
+The outcome of the experiment is the CSV file named [`results-evo.txt`](phase-1/results-evo.txt).
 
 ### Phase 2: search space walks
 

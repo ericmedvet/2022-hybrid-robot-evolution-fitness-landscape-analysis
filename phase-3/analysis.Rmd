@@ -10,7 +10,7 @@ require(tidyverse)
 
 ### Load
 ```{r}
-d = read.csv2("results-large-nice.txt", dec=".")
+d = read.csv2("../phase-1/results-evo.txt",dec=".")
 summary(d)
 ```
 
@@ -20,7 +20,7 @@ Extract key factors.
 d$controller = factor(str_match(d$target,"sin[PFA]+")[,1])
 d$randomSeed = factor(str_match(d$randomGenerator,"=([0-9]+)")[,2])
 d$nSoft = factor(str_count(d$target,"soft"))
-d = d[,c("randomSeed", "controller", "nSoft", "iterations", "best.fitness.vx")]
+d = d[,c("randomSeed","controller","nSoft","iterations","best.fitness.vx")]
 summary(d)
 ```
 
