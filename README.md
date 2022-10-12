@@ -42,3 +42,5 @@ The outcome of the experiment is the CSV file named [`results.txt`](phase-1/resu
 ### Phase 2: search space walks
 
 ### Phase 3: data analysis
+
+For the post-processing of the experimental data, including the generation of the figure, use the R notebook [`phase-3/analysis.Rmd`](phase-3/analysis.Rmd).

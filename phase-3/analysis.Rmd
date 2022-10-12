@@ -1,0 +1,32 @@
+---
+title: "Evolution of hybrid legged robots with an open-loop controller"
+output: html_notebook
+---
+```{r}
+require(tidyverse)
+```
+
+## Load and clean data
+
+### Load
+```{r}
+d = read.csv2("results-large-nice.txt", dec=".")
+summary(d)
+```
+
+### Clean
+Extract key factors.
+```{r}
+d$controller = factor(str_match(d$target,"sin[PFA]+")[,1])
+d$randomSeed = factor(str_match(d$randomGenerator,"=([0-9]+)")[,2])
+d$nSoft = factor(str_count(d$target,"soft"))
+d = d[,c("randomSeed", "controller", "nSoft", "iterations", "best.fitness.vx")]
+summary(d)
+```
+
+## Evolution plot
+
+```{r, fig.width=10, fig.height=4}
+g = d %>% group_by(controller, nSoft, iterations) %>% summarise_at(vars(best.fitness.vx), list(Q1=~quantile(.,probs=0.25), median=median, Q3=~quantile(.,probs=0.75)))
+g %>% ggplot(aes(iterations,median,col=nSoft)) + geom_line() + geom_ribbon(aes(ymin=Q1,ymax=Q3,fill=nSoft),alpha=0.2,color=NA) + facet_grid(.~controller) + theme_light() + scale_color_brewer(palette="Set1") + scale_fill_brewer(palette="Set1")
+```
