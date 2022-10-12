@@ -1,0 +1,54 @@
+experiment(
+  runs =
+    (randomGenerator = (seed = [0; 1; 2; 3; 4; 5; 6; 7; 8; 9]) * [rg.defaultRG()]) *
+    (target = (function = [
+      s.f.sinPFA(a = s.range(min = 0.0; max = 1.0); f = s.range(min = 0.5; max = 2.0));
+      s.f.sinPF(a = s.range(min = 1.0; max = 1.0); f = s.range(min = 0.5; max = 2.0));
+      s.f.sinPA(a = s.range(min = 0.0; max = 1.0); f = s.range(min = 0.5; max = 2.0));
+      s.f.sinP(a = s.range(min = 1.0; max = 1.0); f = s.range(min = 0.5; max = 2.0))
+    ]) * [
+      s.a.numLeggedHybridModularRobot(
+        modules = [
+          s.a.l.module(downConnector = rigid; legChunks = [s.a.l.legChunk(upConnector = rigid); s.a.l.legChunk(upConnector = rigid)]; trunkLength = 8);
+          s.a.l.module(downConnector = rigid; legChunks = [s.a.l.legChunk(upConnector = rigid); s.a.l.legChunk(upConnector = rigid)]; trunkLength = 8);
+          s.a.l.module(downConnector = rigid; legChunks = [s.a.l.legChunk(upConnector = rigid); s.a.l.legChunk(upConnector = rigid)]; trunkLength = 8);
+          s.a.l.module(downConnector = rigid; legChunks = [s.a.l.legChunk(upConnector = rigid); s.a.l.legChunk(upConnector = rigid)]; trunkLength = 8);
+          s.a.l.module(downConnector = rigid; legChunks = [s.a.l.legChunk(upConnector = rigid); s.a.l.legChunk(upConnector = rigid)]; trunkLength = 8)
+        ]
+      );
+      s.a.numLeggedHybridModularRobot(
+        modules = [
+          s.a.l.module(downConnector = soft; legChunks = [s.a.l.legChunk(upConnector = rigid); s.a.l.legChunk(upConnector = rigid)]; trunkLength = 8);
+          s.a.l.module(downConnector = soft; legChunks = [s.a.l.legChunk(upConnector = rigid); s.a.l.legChunk(upConnector = rigid)]; trunkLength = 8);
+          s.a.l.module(downConnector = soft; legChunks = [s.a.l.legChunk(upConnector = rigid); s.a.l.legChunk(upConnector = rigid)]; trunkLength = 8);
+          s.a.l.module(downConnector = soft; legChunks = [s.a.l.legChunk(upConnector = rigid); s.a.l.legChunk(upConnector = rigid)]; trunkLength = 8);
+          s.a.l.module(downConnector = soft; legChunks = [s.a.l.legChunk(upConnector = rigid); s.a.l.legChunk(upConnector = rigid)]; trunkLength = 8)
+        ]
+      );
+      s.a.numLeggedHybridModularRobot(
+        modules = [
+          s.a.l.module(downConnector = soft; legChunks = [s.a.l.legChunk(upConnector = rigid); s.a.l.legChunk(upConnector = soft)]; trunkLength = 8);
+          s.a.l.module(downConnector = soft; legChunks = [s.a.l.legChunk(upConnector = rigid); s.a.l.legChunk(upConnector = soft)]; trunkLength = 8);
+          s.a.l.module(downConnector = soft; legChunks = [s.a.l.legChunk(upConnector = rigid); s.a.l.legChunk(upConnector = soft)]; trunkLength = 8);
+          s.a.l.module(downConnector = soft; legChunks = [s.a.l.legChunk(upConnector = rigid); s.a.l.legChunk(upConnector = soft)]; trunkLength = 8);
+          s.a.l.module(downConnector = soft; legChunks = [s.a.l.legChunk(upConnector = rigid); s.a.l.legChunk(upConnector = soft)]; trunkLength = 8)
+        ]
+      )
+    ]) * [
+    run(
+      solver = so.doublesStandard(nEval = 14000; nPop = 70);
+      mapper = m.toParametrized();
+      task = s.task.locomotion(terrain = s.t.flat(); duration = 45);
+      comparator = c.max(of = e.locomotionXVelocity())
+    )
+  ];
+  qExtractor = e.locomotionXVelocity();
+  bestFileSaver = fileSaver(
+    fileName = "./results.txt";
+    serializer = ser.javaSerializer()
+  );
+  videoSaver = videoSaver(drawer = d.basicWithAgentMiniature(); w = 600; h = 400);
+  videoTasks = [
+    videoTask(task = s.task.locomotion(terrain = s.t.flat(); duration = 45))
+  ]
+)
