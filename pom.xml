@@ -29,7 +29,7 @@
     <packaging>pom</packaging>
     <properties>
         <revision>0.0.1</revision>
-        <twodrobevo.version>0.3.2</twodrobevo.version>
+        <twodrobevo.version>0.3.3</twodrobevo.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <jdk.version>18</jdk.version>
     </properties>

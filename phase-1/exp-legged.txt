@@ -1,6 +1,6 @@
 experiment(
   runs =
-    (randomGenerator = (seed = [0; 1; 2; 3; 4; 5; 6; 7; 8; 9]) * [rg.defaultRG()]) *
+    (randomGenerator = (seed = [1 : 1 : 10]) * [rg.defaultRG()]) *
     (target = (function = [
       s.f.sinPFA(a = s.range(min = 0.0; max = 1.0); f = s.range(min = 0.5; max = 2.0));
       s.f.sinPF(a = s.range(min = 1.0; max = 1.0); f = s.range(min = 0.5; max = 2.0));
@@ -8,29 +8,17 @@ experiment(
       s.f.sinP(a = s.range(min = 1.0; max = 1.0); f = s.range(min = 0.5; max = 2.0))
     ]) * [
       s.a.numLeggedHybridModularRobot(
-        modules = [
-          s.a.l.module(downConnector = rigid; legChunks = [s.a.l.legChunk(upConnector = rigid); s.a.l.legChunk(upConnector = rigid)]; trunkLength = 8);
-          s.a.l.module(downConnector = rigid; legChunks = [s.a.l.legChunk(upConnector = rigid); s.a.l.legChunk(upConnector = rigid)]; trunkLength = 8);
-          s.a.l.module(downConnector = rigid; legChunks = [s.a.l.legChunk(upConnector = rigid); s.a.l.legChunk(upConnector = rigid)]; trunkLength = 8);
-          s.a.l.module(downConnector = rigid; legChunks = [s.a.l.legChunk(upConnector = rigid); s.a.l.legChunk(upConnector = rigid)]; trunkLength = 8);
+        modules = 5 * [
           s.a.l.module(downConnector = rigid; legChunks = [s.a.l.legChunk(upConnector = rigid); s.a.l.legChunk(upConnector = rigid)]; trunkLength = 8)
         ]
       );
       s.a.numLeggedHybridModularRobot(
-        modules = [
-          s.a.l.module(downConnector = soft; legChunks = [s.a.l.legChunk(upConnector = rigid); s.a.l.legChunk(upConnector = rigid)]; trunkLength = 8);
-          s.a.l.module(downConnector = soft; legChunks = [s.a.l.legChunk(upConnector = rigid); s.a.l.legChunk(upConnector = rigid)]; trunkLength = 8);
-          s.a.l.module(downConnector = soft; legChunks = [s.a.l.legChunk(upConnector = rigid); s.a.l.legChunk(upConnector = rigid)]; trunkLength = 8);
-          s.a.l.module(downConnector = soft; legChunks = [s.a.l.legChunk(upConnector = rigid); s.a.l.legChunk(upConnector = rigid)]; trunkLength = 8);
+        modules = 5 * [
           s.a.l.module(downConnector = soft; legChunks = [s.a.l.legChunk(upConnector = rigid); s.a.l.legChunk(upConnector = rigid)]; trunkLength = 8)
         ]
       );
       s.a.numLeggedHybridModularRobot(
-        modules = [
-          s.a.l.module(downConnector = soft; legChunks = [s.a.l.legChunk(upConnector = rigid); s.a.l.legChunk(upConnector = soft)]; trunkLength = 8);
-          s.a.l.module(downConnector = soft; legChunks = [s.a.l.legChunk(upConnector = rigid); s.a.l.legChunk(upConnector = soft)]; trunkLength = 8);
-          s.a.l.module(downConnector = soft; legChunks = [s.a.l.legChunk(upConnector = rigid); s.a.l.legChunk(upConnector = soft)]; trunkLength = 8);
-          s.a.l.module(downConnector = soft; legChunks = [s.a.l.legChunk(upConnector = rigid); s.a.l.legChunk(upConnector = soft)]; trunkLength = 8);
+        modules = 5 * [
           s.a.l.module(downConnector = soft; legChunks = [s.a.l.legChunk(upConnector = rigid); s.a.l.legChunk(upConnector = soft)]; trunkLength = 8)
         ]
       )
