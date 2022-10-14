@@ -38,6 +38,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
@@ -265,10 +266,13 @@ public class Starter implements Runnable {
       executorService.shutdownNow();
       return;
     }
+    AtomicInteger counter = new AtomicInteger(0);
     futures.forEach(f -> {
       try {
         Outcome outcome = f.get();
-        L.info(("Outcome for iteration %d, target %d, point %d found: " + qExtractorF.getFormat() + " vs. " + qExtractorF.getFormat()).formatted(
+        L.info(("Outcome %d/%d for iteration %d, target %d, point %d found: " + qExtractorF.getFormat() + " vs. " + qExtractorF.getFormat()).formatted(
+            counter.incrementAndGet(),
+            futures.size(),
             outcome.annotatedSourceGenotype().iteration(),
             outcome.destinationIndex(),
             outcome.stepIndex(),
