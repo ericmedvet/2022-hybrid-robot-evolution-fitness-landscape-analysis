@@ -4,6 +4,7 @@ module it.units.erallab.respap.hrefla.main {
   requires commons.csv;
   uses it.units.erallab.mrsim2d.core.engine.Engine;
   requires it.units.erallab.mrsim2d.core;
+  requires it.units.malelab.jgea.core;
   requires it.units.erallab.mrsim2d.builder;
   requires it.units.erallab.robotevo2d.main;
   exports it.units.erallab.respap.hrefla to jcommander;

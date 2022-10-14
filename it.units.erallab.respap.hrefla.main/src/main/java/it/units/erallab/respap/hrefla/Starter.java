@@ -26,14 +26,13 @@ import it.units.erallab.mrsim2d.core.engine.Engine;
 import it.units.erallab.mrsim2d.core.tasks.Task;
 import it.units.erallab.robotevo2d.main.builder.MapperBuilder;
 import it.units.erallab.robotevo2d.main.singleagent.PreparedNamedBuilder;
+import it.units.malelab.jgea.core.listener.NamedFunction;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVPrinter;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.List;
-import java.util.ServiceLoader;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -41,6 +40,8 @@ import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
+import java.util.random.RandomGenerator;
+import java.util.stream.IntStream;
 
 public class Starter implements Runnable {
 
@@ -62,20 +63,20 @@ public class Starter implements Runnable {
   )
   public List<Integer> iterations = List.of();
   @Parameter(
-      names = {"--nOfTargets", "-nt"},
+      names = {"--nOfDestinations", "-nd"},
       description = "Number of target genotypes for each best"
   )
-  public int nOfTargets = 1;
+  public int nOfDestinations = 1;
   @Parameter(
-      names = {"--targetDistance", "-d"},
+      names = {"--destinationDistance", "-d"},
       description = "Euclidean distance of the target"
   )
-  public double targetDistance = 0.5;
+  public double destinationDistance = 0.5;
   @Parameter(
-      names = {"--nOfPoints", "-np"},
+      names = {"--nOfSteps", "-np"},
       description = "Number of points for each best-to-target section"
   )
-  public int nOfPoints = 10;
+  public int nOfSteps = 10;
   @Parameter(
       names = {"--task"},
       description = "Task description"
@@ -91,22 +92,28 @@ public class Starter implements Runnable {
       description = "Number of threads"
   )
   public int nOfThreads = 1;
+  @Parameter(
+      names = {"--randomSeed"},
+      description = "Seed of the random generator"
+  )
+  public int randomSeed = 1;
 
-  private record Outcome(
-      TargetGenotype targetGenotype,
-      int targetIndex,
-      int pointIndex,
-      double d,
-      List<Double> genotype,
-      double q
-  ) {}
-
-  private record TargetGenotype(
+  private record AnnotatedGenotype(
       String target,
       String mapper,
       String randomGenerator,
       int iteration,
-      List<Double> genotype
+      List<Double> sourceGenotype,
+      double q
+  ) {}
+
+  private record Outcome(
+      AnnotatedGenotype annotatedSourceGenotype,
+      int destinationIndex,
+      int stepIndex,
+      double d,
+      List<Double> genotype,
+      double q
   ) {}
 
 
@@ -128,9 +135,36 @@ public class Starter implements Runnable {
     }
   }
 
+  private static List<Double> dPoint(double d, List<Double> src, List<Double> direction) {
+    if (src.size() != direction.size()) {
+      throw new IllegalArgumentException("Vectors should have the same length: got %d and %d".formatted(
+          src.size(),
+          direction.size()
+      ));
+    }
+    return IntStream.range(0, src.size())
+        .mapToObj(i -> src.get(i) + direction.get(i) * d)
+        .toList();
+  }
+
+  private static double distance(List<Double> p1, List<Double> p2) {
+    if (p1.size() != p2.size()) {
+      throw new IllegalArgumentException("Vectors should have the same length: got %d and %d".formatted(
+          p1.size(),
+          p2.size()
+      ));
+    }
+    double d = 0;
+    for (int i = 0; i < p1.size(); i++) {
+      d = d + (p1.get(i) - p2.get(i)) * (p1.get(i) - p2.get(i));
+    }
+    return Math.sqrt(d);
+  }
+
   public static Function<String, Object> javaDeserializer() {
     return s -> {
-      try (ByteArrayInputStream bais = new ByteArrayInputStream(Base64.getDecoder().decode(s)); ObjectInputStream ois = new ObjectInputStream(
+      try (ByteArrayInputStream bais = new ByteArrayInputStream(Base64.getDecoder()
+          .decode(s)); ObjectInputStream ois = new ObjectInputStream(
           bais)) {
         return ois.readObject();
       } catch (IOException | ClassNotFoundException e) {
@@ -140,26 +174,34 @@ public class Starter implements Runnable {
     };
   }
 
+  private static List<Double> randomUnitVector(int p, RandomGenerator randomGenerator) {
+    List<Double> v = IntStream.range(0, p).mapToObj(i -> randomGenerator.nextGaussian(0d, 1d)).toList();
+    List<Double> origin = Collections.nCopies(p, 0d);
+    double norm = distance(v, origin);
+    return v.stream().map(c -> c / norm).toList();
+  }
+
   @Override
   public void run() {
     NamedBuilder<?> nb = PreparedNamedBuilder.get();
     //read file and save bests
-    List<TargetGenotype> targetGenotypes;
+    List<AnnotatedGenotype> annotatedGenotypes;
     try (Reader reader = new FileReader(inputFile)) {
       L.info("Reading input file %s".formatted(inputFile));
       CSVParser parser = CSVFormat.Builder.create().setDelimiter(';').setHeader().build().parse(reader);
       //noinspection unchecked
-      targetGenotypes = parser.stream()
+      annotatedGenotypes = parser.stream()
           .filter(r -> iterations.contains(Integer.parseInt(r.get("iterations"))))
-          .map(r -> new TargetGenotype(
+          .map(r -> new AnnotatedGenotype(
               r.get("target"),
               r.get("mapper"),
               r.get("randomGenerator"),
               Integer.parseInt(r.get("iterations")),
-              (List<Double>)javaDeserializer().apply(r.get("best→g"))
+              (List<Double>) javaDeserializer().apply(r.get("best→g")),
+              Double.parseDouble(r.get("best→fitness→vx"))
           ))
           .toList();
-      L.info("%d target genotypes found for iterations %s".formatted(targetGenotypes.size(), iterations));
+      L.info("%d target genotypes found for iterations %s".formatted(annotatedGenotypes.size(), iterations));
     } catch (IOException e) {
       throw new IllegalArgumentException("Cannot open file %s: %s".formatted(inputFile, e));
     }
@@ -168,39 +210,83 @@ public class Starter implements Runnable {
         .findFirst()
         .orElseThrow(() -> new RuntimeException("Cannot instantiate an engine"));
     ExecutorService executorService = Executors.newFixedThreadPool(nOfThreads);
-    @SuppressWarnings("unchecked") Function<Object, Double> qExtractorF =
-        (Function<Object, Double>) nb.build(qExtractor);
+    @SuppressWarnings("unchecked") NamedFunction<Object, Double> qExtractorF =
+        (NamedFunction<Object, Double>) nb.build(qExtractor);
+    RandomGenerator randomGenerator = new Random(randomSeed);
     //iterate over bests
     List<Future<Outcome>> futures = new ArrayList<>();
-    for (TargetGenotype targetGenotype : targetGenotypes) {
-      for (int targetIndex = 0; targetIndex < nOfTargets; targetIndex = targetIndex + 1) {
-        int t = targetIndex;
-        //TODO build random target point
-        for (int pointIndex = 0; pointIndex < nOfPoints; pointIndex = pointIndex + 1) {
-          int p = pointIndex;
-          double d = 0; //TODO
-          List<Double> genotype = targetGenotype.genotype(); //TODO
-          Supplier<EmbodiedAgent> unmappedAgentSupplier = () -> (EmbodiedAgent) nb.build(targetGenotype.target());
+    for (AnnotatedGenotype annotatedGenotype : annotatedGenotypes) {
+      for (int destinationIndex = 0; destinationIndex < nOfDestinations; destinationIndex = destinationIndex + 1) {
+        int dI = destinationIndex;
+        List<Double> unitDiff = randomUnitVector(annotatedGenotype.sourceGenotype().size(), randomGenerator);
+        for (int stepIndex = 0; stepIndex <= nOfSteps; stepIndex = stepIndex + 1) {
+          int sI = stepIndex;
+          double d = destinationDistance * (double) stepIndex / (double) nOfSteps;
+          List<Double> genotype = dPoint(d, annotatedGenotype.sourceGenotype(), unitDiff);
+          Supplier<EmbodiedAgent> unmappedAgentSupplier = () -> (EmbodiedAgent) nb.build(annotatedGenotype.target());
           @SuppressWarnings("unchecked") MapperBuilder<List<Double>, Supplier<EmbodiedAgent>> mapper =
               (MapperBuilder<List<Double>, Supplier<EmbodiedAgent>>) nb.build(
-                  targetGenotype.mapper());
+                  annotatedGenotype.mapper());
           Supplier<EmbodiedAgent> agentSupplier = mapper.buildFor(unmappedAgentSupplier).apply(genotype);
           @SuppressWarnings("unchecked") Task<Supplier<Agent>, ?> localTask =
               (Task<Supplier<Agent>, ?>) nb.build(task);
           futures.add(executorService.submit(() -> {
             Object taskOutcome = localTask.run(agentSupplier::get, engineSupplier.get());
-            L.info("Task done with outcome %s".formatted(taskOutcome));
-            return new Outcome(targetGenotype, t, p, 0, genotype, qExtractorF.apply(taskOutcome));
+            return new Outcome(annotatedGenotype, dI, sI, d, genotype, qExtractorF.apply(taskOutcome));
           }));
         }
       }
     }
+    L.info("%d tasks scheduled".formatted(futures.size()));
     //save results
+    CSVPrinter printer;
+    try {
+      printer = new org.apache.commons.csv.CSVPrinter(
+          new PrintStream(outputFile),
+          CSVFormat.Builder.create().setDelimiter(";").build()
+      );
+      printer.printRecord(List.of(
+          "target",
+          "mapper",
+          "randomGenerator",
+          "iteration",
+          "srcGenotype",
+          "srcQ",
+          "dstIndex",
+          "stepIndex",
+          "d",
+          "pointQ"
+      ));
+    } catch (IOException e) {
+      L.severe("Cannot open output file: %s".formatted(e));
+      return;
+    }
     futures.forEach(f -> {
       try {
-        L.info("%s".formatted(f.get())); // TODO save
+        Outcome outcome = f.get();
+        L.info(("Outcome for iteration %d, target %d, point %d found: " + qExtractorF.getFormat() + " vs. " + qExtractorF.getFormat()).formatted(
+            outcome.annotatedSourceGenotype().iteration(),
+            outcome.destinationIndex(),
+            outcome.stepIndex(),
+            outcome.q(),
+            outcome.annotatedSourceGenotype().q()
+        ));
+        printer.printRecord(List.of(
+            outcome.annotatedSourceGenotype().target(),
+            outcome.annotatedSourceGenotype().mapper(),
+            outcome.annotatedSourceGenotype().randomGenerator(),
+            outcome.annotatedSourceGenotype().iteration(),
+            outcome.annotatedSourceGenotype().sourceGenotype(),
+            outcome.annotatedSourceGenotype().q(),
+            outcome.destinationIndex(),
+            outcome.stepIndex(),
+            outcome.d(),
+            outcome.q()
+        ));
       } catch (InterruptedException | ExecutionException e) {
-        L.severe("Cannot get results due to: %s".formatted(e));
+        L.severe("Cannot get result due to: %s".formatted(e));
+      } catch (IOException e) {
+        L.severe("Cannot print result due to: %s".formatted(e));
       }
     });
   }
