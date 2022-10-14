@@ -25,6 +25,7 @@ import it.units.erallab.mrsim2d.core.EmbodiedAgent;
 import it.units.erallab.mrsim2d.core.engine.Engine;
 import it.units.erallab.mrsim2d.core.tasks.Task;
 import it.units.erallab.robotevo2d.main.builder.MapperBuilder;
+import it.units.erallab.robotevo2d.main.builder.SerializerBuilder;
 import it.units.erallab.robotevo2d.main.singleagent.PreparedNamedBuilder;
 import it.units.malelab.jgea.core.listener.NamedFunction;
 import org.apache.commons.csv.CSVFormat;
@@ -203,7 +204,7 @@ public class Starter implements Runnable {
           .toList();
       L.info("%d target genotypes found for iterations %s".formatted(annotatedGenotypes.size(), iterations));
     } catch (IOException e) {
-      throw new IllegalArgumentException("Cannot open file %s: %s".formatted(inputFile, e));
+      throw new IllegalArgumentException("Cannot open input file %s: %s".formatted(inputFile, e));
     }
     //prepare engine and executor and qExtractor
     Supplier<Engine> engineSupplier = () -> ServiceLoader.load(Engine.class)
@@ -213,6 +214,7 @@ public class Starter implements Runnable {
     @SuppressWarnings("unchecked") NamedFunction<Object, Double> qExtractorF =
         (NamedFunction<Object, Double>) nb.build(qExtractor);
     RandomGenerator randomGenerator = new Random(randomSeed);
+    Function<Object, String> serializer = SerializerBuilder.javaSerializer();
     //iterate over bests
     List<Future<Outcome>> futures = new ArrayList<>();
     for (AnnotatedGenotype annotatedGenotype : annotatedGenotypes) {
@@ -252,6 +254,7 @@ public class Starter implements Runnable {
           "iteration",
           "srcGenotype",
           "srcQ",
+          "genotype",
           "dstIndex",
           "stepIndex",
           "d",
@@ -259,6 +262,7 @@ public class Starter implements Runnable {
       ));
     } catch (IOException e) {
       L.severe("Cannot open output file: %s".formatted(e));
+      executorService.shutdownNow();
       return;
     }
     futures.forEach(f -> {
@@ -276,7 +280,8 @@ public class Starter implements Runnable {
             outcome.annotatedSourceGenotype().mapper(),
             outcome.annotatedSourceGenotype().randomGenerator(),
             outcome.annotatedSourceGenotype().iteration(),
-            outcome.annotatedSourceGenotype().sourceGenotype(),
+            serializer.apply(outcome.annotatedSourceGenotype().sourceGenotype()),
+            serializer.apply(outcome.genotype()),
             outcome.annotatedSourceGenotype().q(),
             outcome.destinationIndex(),
             outcome.stepIndex(),

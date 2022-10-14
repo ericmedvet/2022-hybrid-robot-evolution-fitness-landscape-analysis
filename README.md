@@ -7,7 +7,7 @@ This repo includes the tools and the artifacts needed for replicating the result
 This project depends on:
 - [2d-robot-evolution](https://github.com/ericmedvet/2d-robot-evolution) v0.3.2, which in turn depends on:
   - [JGEA](https://github.com/ericmedvet/jgea) v2.2.1
-  - [2-D Multi Robot Simulator (2D-MR-Sim)](https://github.com/ericmedvet/2dmrsim)
+  - [2-D Multi Robot Simulator (2D-MR-Sim)](https://github.com/ericmedvet/2dmrsim) v0.6.3
 - Java SDK 18
 - R (with some appropriate tools)
 
@@ -16,7 +16,7 @@ This project depends on:
 ### Preparation
 
 After having cloned this repo, build it with:
-```bash
+```shell
 mvn clean install
 ```
 
@@ -28,7 +28,7 @@ Before building this project, you have to clone `2d-robot-evolution` (the proper
 Here you perform a number of evolutionary runs with 3 different bodies (no soft parts, 5 soft parts, 10 soft parts) and 4 different open-loop controllers (combinations of phase, amplitude, and frequency of a periodic controller).
 The experiment description is in [`phase-1/exp-legged.txt`](phase-1/exp-legged.txt).
 The command for starting the experiment is:
-```bash
+```shell
 cd phase-1
 java -cp "../it.units.erallab.respap.hrefla.assembly/target/respap-hrefla.assembly-0.0.1-bin/modules/*" it.units.erallab.robotevo2d.main.singleagent.Starter --expFile exp-legged.txt --nOfThreads 70
 ```
@@ -40,6 +40,18 @@ Running this experiments on our machine (Intel(R) Xeon(R) W-2295 CPU @ 3.00GHz w
 The outcome of the experiment is the CSV file named [`results-evo.txt`](phase-1/results-evo.txt).
 
 ### Phase 2: search space walks
+
+Here you perform the analysis of the fitness landscape.
+In brief, for each run and each iteration number, you take the best individual at that iteration and build a number (`-nd` below) of *sections* of fitness landscape.
+For each section, a number (`-np` below) of genotypes are built by evenly sampling the segment connecting the genotype of the best individual and a random genotype at a Euclidean distance (`-d` below) from the best individual genotype.
+For each genotype (point) on the segment, you build a robot and compute its fitness on the task (`--task` below, the same of phase-1).
+
+The outcome of the experiment is the CSV file named [`sections.txt`](phase-2/sections.txt).
+
+```shell
+cd phase-2
+java -cp "../it.units.erallab.respap.hrefla.assembly/target/respap-hrefla.assembly-0.0.1-bin/modules/*" it.units.erallab.respap.hrefla.Starter -if ../phase-1/results-evo.txt -of sections.txt -d 0.25 -i 1,100,199 -nd 10 -np 25 --nOfThreads 7 --qExtractor 'e.locomotionXVelocity()' --task 's.task.locomotion(terrain=s.t.flat();duration=45)'
+```
 
 ### Phase 3: data analysis
 
