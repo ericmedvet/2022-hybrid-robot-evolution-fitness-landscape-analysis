@@ -6,7 +6,7 @@ output: html_notebook
 require(tidyverse)
 ```
 
-## Load and clean data
+## Load and clean evolution data
 
 ### Load
 ```{r}
@@ -27,6 +27,69 @@ summary(d)
 ## Evolution plot
 
 ```{r, fig.width=10, fig.height=4}
-g = d %>% group_by(controller, nSoft, iterations) %>% summarise_at(vars(best.fitness.vx), list(Q1=~quantile(.,probs=0.25), median=median, Q3=~quantile(.,probs=0.75)))
-g %>% ggplot(aes(iterations,median,col=nSoft)) + geom_line() + geom_ribbon(aes(ymin=Q1,ymax=Q3,fill=nSoft),alpha=0.2,color=NA) + facet_grid(.~controller) + theme_light() + scale_color_brewer(palette="Set1") + scale_fill_brewer(palette="Set1")
+gd = d %>% group_by(controller, nSoft, iterations) %>% summarise_at(vars(best.fitness.vx), list(Q1=~quantile(.,probs=0.25), median=median, Q3=~quantile(.,probs=0.75)))
+gd %>% ggplot(aes(iterations,median,col=nSoft)) + geom_line() + geom_ribbon(aes(ymin=Q1,ymax=Q3,fill=nSoft),alpha=0.2,color=NA) + facet_grid(.~controller) + theme_light() + scale_color_brewer(palette="Set1") + scale_fill_brewer(palette="Set1")
+```
+
+## Load and clean evolution data
+
+## Load
+```{r}
+s = read.csv2("../phase-2/sections.txt",dec=".")
+summary(s)
+```
+
+### Clean
+Extract key factors.
+```{r}
+s$controller = factor(str_match(s$target,"sin[PFA]+")[,1])
+s$randomSeed = factor(str_match(s$randomGenerator,"=([0-9]+)")[,2])
+s$nSoft = factor(str_count(s$target,"soft"))
+s = s[,c("randomSeed","controller","nSoft","iteration","dstIndex","stepIndex","d","pointQ")]
+summary(s)
+s = s %>% group_by(randomSeed, controller, nSoft, iteration, dstIndex) %>% mutate(srcQ = pointQ[1]) %>% ungroup() %>% mutate(rf=(pointQ-srcQ)/srcQ)
+```
+
+## Sections plots
+
+### Actual fitness average across destinations, randomSeed 
+```{r, fig.width=10, fig.height=4}
+gs1 = s %>% group_by(controller, nSoft, iteration, stepIndex,d) %>% summarise_at(vars(pointQ), list(Q1=~quantile(.,probs=0.25), median=median, Q3=~quantile(.,probs=0.75)))
+gs1 %>% ggplot(aes(d,median,col=nSoft)) + geom_line() + geom_ribbon(aes(ymin=Q1,ymax=Q3,fill=nSoft),alpha=0.2,color=NA) + facet_grid(factor(iteration)~controller) + theme_light() + scale_color_brewer(palette="Set1") + scale_fill_brewer(palette="Set1")
+```
+
+### Fitness relative variation average across destinations, randomSeed 
+```{r, fig.width=10, fig.height=4}
+gs2 = s %>% group_by(controller, nSoft, iteration, stepIndex, d) %>% summarise_at(vars(rf), list(Q1=~quantile(.,probs=0.25), median=median, Q3=~quantile(.,probs=0.75)))
+gs2 %>% ggplot(aes(d,median,col=nSoft)) + geom_line() + geom_ribbon(aes(ymin=Q1,ymax=Q3,fill=nSoft),alpha=0.2,color=NA) + facet_grid(factor(iteration)~controller) + theme_light() + scale_color_brewer(palette="Set1") + scale_fill_brewer(palette="Set1") + ylim(c(-1,1))
+```
+
+### Fitness relative variation for iteration==100, randomSeed==0
+```{r, fig.width=10, fig.height=8}
+gs3 = s %>% filter(iteration==100 & randomSeed==0)
+gs3 %>% ggplot(aes(d,rf,col=nSoft)) + geom_line() + facet_grid(factor(dstIndex)~controller) + theme_light() + scale_color_brewer(palette="Set1") + scale_fill_brewer(palette="Set1")
+```
+
+### Fitness relative variation for iteration==100
+```{r, fig.width=10, fig.height=8}
+gs4 = s %>% filter(iteration==100)
+gs4 %>% ggplot(aes(d,rf,col=nSoft)) + geom_line(aes(linetype=controller)) + facet_grid(factor(dstIndex)~factor(randomSeed)) + theme_light() + scale_color_brewer(palette="Set1") + scale_fill_brewer(palette="Set1")
+```
+
+### Partial information count / number of changes (on relative fitness variation)
+This function returns the ratio between the number (`which(cc)` below) of direction change in a sequence of values and the length of the sequence.
+A variation is not considered if it is smaller than `epsilon`.
+```{r}
+changes = function(values, epsilon) {
+  v = values[2:length(values)]-values[1:(length(values)-1)];
+  v[abs(v)<=epsilon] = 0;
+  c = sign(v)
+  c = c[c!=0]
+  cc = c[2:length(c)]!=c[1:(length(c)-1)]
+  length(which(cc))/(length(values))
+}
+```
+
+```{r, fig.width=10, fig.height=4}
+s %>% group_by(controller, nSoft, iteration, randomSeed, dstIndex) %>% summarise_at(vars(rf), list(c10=~changes(.,0.10), c25=~changes(.,0.25), c50=~changes(.,0.50), c90=~changes(.,0.9))) %>% pivot_longer(c(c10,c25,c50,c90)) %>% group_by(controller,nSoft,iteration,name) %>% summarise_at(vars(value), list(Q1=~quantile(.,probs=0.25), median=median, Q3=~quantile(.,probs=0.75))) %>% ggplot(aes(x=iteration,y=median,color=nSoft)) + geom_line()  + geom_ribbon(aes(ymin=Q1,ymax=Q3,fill=nSoft),alpha=0.2,color=NA) + facet_grid(name~controller)  + theme_light() + scale_color_brewer(palette="Set1") + scale_fill_brewer(palette="Set1")
 ```
