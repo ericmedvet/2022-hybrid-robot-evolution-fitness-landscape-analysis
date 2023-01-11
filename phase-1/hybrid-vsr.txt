@@ -1,0 +1,77 @@
+ea.experiment(
+  runs = (randomGenerator = (seed = [1:1:10]) * [ea.rg.defaultRG()]) *
+    (solver = (mapper = (target = (function = [
+      s.f.sin(
+        p = s.range(min = -1.57; max = 1.57);
+        f = s.range(min = 0.3; max = 2);
+        a = s.range(min = 1; max = 1);
+        b = s.range(min = 1; max = 1)
+      );
+      s.f.mlp()
+    ]) * (body = (shape = [
+      s.a.vsr.s.free(s = "rrsrr-rsssr-r...r");
+      s.a.vsr.s.free(s = "sssss-sssss-s...s");
+      s.a.vsr.s.free(s = "rsssr-sssss-s...s");
+      s.a.vsr.s.free(s = "rsssr-rsssr-s...s");
+      s.a.vsr.s.free(s = "rrsrr-rsssr-s...s")
+    ]) * [
+      s.a.vsr.gridBody(
+        sensorizingFunction = s.a.vsr.sf.directional(
+          headSensors = [s.s.sin(f = 0); s.s.d(a = -30; r = 10)];
+          nSensors = [s.s.ar(); s.s.rv(a = 0); s.s.rv(a = 90)];
+          sSensors = [s.s.d(a = -90)]
+        )
+      )
+    ]) * [
+      s.a.centralizedNumGridVSR()
+    ]) * [
+      er.m.parametrizedHomoBrains()
+    ]) * [
+      ea.s.numGA(nEval = 7000; nPop = 70)
+    ]) * [
+    ea.run(
+      problem = ea.p.totalOrder(
+        qFunction = s.taskRunner(task = s.task.locomotion(
+          terrain = s.t.flat()
+        ));
+        cFunction = s.task.locomotion.xVelocity();
+        type = maximize
+      )
+    )
+  ];
+  listeners = [
+    ea.l.tui(
+      functions = [
+        ea.nf.size(f = ea.nf.genotype(individual = ea.nf.best()); s = "%5d");
+        ea.nf.bestFitness(f = ea.nf.f(outerF = s.task.l.xVelocity(); s = "%5.2f"));
+        ea.nf.fitnessHist(f = ea.nf.f(outerF = s.task.l.xVelocity()))
+      ];
+      plots = [
+        ea.plot.fitness(x = ea.nf.progress(); f = ea.nf.f(outerF = s.task.l.xVelocity()); sort = max; minY = 0; maxX = 1)
+      ]
+    );
+    ea.l.telegram(
+      chatId = "207490209";
+      botIdFilePath = "../tlg.txt";
+      plots = [
+        ea.plot.fitness(f = ea.nf.f(outerF = s.task.l.xVelocity()); sort = max; minY = 0)
+      ];
+      accumulators = [
+        er.video(
+          task = s.task.locomotion(
+            terrain = s.t.flat()
+          )
+        )
+      ]
+    );
+    ea.l.bestCsv(
+      filePath = "best-hybrid-vsr.csv";
+      functions = [
+        ea.nf.size(f = ea.nf.genotype(individual = ea.nf.best()); s = "%5d");
+        ea.nf.bestFitness(f = ea.nf.f(outerF = s.task.l.xVelocity(); s = "%5.2f"));
+        ea.nf.base64(f = ea.nf.genotype(individual = ea.nf.best()))
+      ];
+      runKeys = ["solver.mapper.target.function"; "solver.mapper.target.body.shape"; "randomGenerator.seed"]
+    )
+  ]
+)
