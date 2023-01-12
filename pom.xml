@@ -57,7 +57,7 @@
     </modules>
     <packaging>pom</packaging>
     <properties>
-        <revision>0.0.1</revision>
+        <revision>0.0.2</revision>
         <twodrobevo.version>1.1.1-SNAPSHOT</twodrobevo.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <jdk.version>17</jdk.version>

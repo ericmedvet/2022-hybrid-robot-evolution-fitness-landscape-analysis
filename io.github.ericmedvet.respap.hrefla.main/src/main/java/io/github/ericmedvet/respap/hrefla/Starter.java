@@ -19,17 +19,24 @@ package io.github.ericmedvet.respap.hrefla;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
-import io.github.ericmedvet.jgea.core.listener.NamedFunction;
+import io.github.ericmedvet.jgea.experimenter.InvertibleMapper;
 import io.github.ericmedvet.jnb.core.NamedBuilder;
+import io.github.ericmedvet.mrsim2d.core.EmbodiedAgent;
 import io.github.ericmedvet.mrsim2d.core.engine.Engine;
+import io.github.ericmedvet.mrsim2d.core.tasks.Task;
+import io.github.ericmedvet.mrsim2d.core.util.DoubleRange;
 import io.github.ericmedvet.robotevo2d.main.PreparedNamedBuilder;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVPrinter;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
@@ -39,6 +46,24 @@ import java.util.stream.IntStream;
 public class Starter implements Runnable {
 
   private final static Logger L = Logger.getLogger(Starter.class.getName());
+
+  private final static String VSR_TARGET_TEMPLATE = """
+      s.a.centralizedNumGridVSR(
+        body = s.a.vsr.gridBody(
+          sensorizingFunction = s.a.vsr.sf.directional(
+            headSensors = [s.s.sin(f = 0); s.s.d(a = -30; r = 10)];
+            nSensors = [s.s.ar(); s.s.rv(a = 0); s.s.rv(a = 90)];
+            sSensors = [s.s.d(a = -90)]
+          );
+          shape = %SHAPE%
+        );
+        function = %FUNCTION%
+      )
+      """;
+
+  private final static String C_FUNCTION = "s.task.locomotion.xVelocity()";
+
+  private final static String MAPPER_TEMPLATE = "er.m.parametrizedHomoBrains(target=%TARGET%)";
 
   @Parameter(
       names = {"--inputFile", "-if"},
@@ -74,12 +99,7 @@ public class Starter implements Runnable {
       names = {"--task"},
       description = "Task description"
   )
-  public String task = "";
-  @Parameter(
-      names = {"--qExtractor"},
-      description = "Quality extraction function"
-  )
-  public String qExtractor = "";
+  public String task = "s.task.locomotion(terrain = s.t.flat())";
   @Parameter(
       names = {"--nOfThreads"},
       description = "Number of threads"
@@ -93,8 +113,7 @@ public class Starter implements Runnable {
 
   private record AnnotatedGenotype(
       String target,
-      String mapper,
-      String randomGenerator,
+      int seed,
       int iteration,
       List<Double> sourceGenotype,
       double q
@@ -135,17 +154,29 @@ public class Starter implements Runnable {
     return Math.sqrt(d);
   }
 
-  public static Function<String, Object> javaDeserializer() {
-    return s -> {
-      try (ByteArrayInputStream bais = new ByteArrayInputStream(Base64.getDecoder()
-          .decode(s)); ObjectInputStream ois = new ObjectInputStream(
-          bais)) {
-        return ois.readObject();
-      } catch (IOException | ClassNotFoundException e) {
-        L.severe("Cannot deserialize: %s".formatted(e));
-      }
-      return null;
-    };
+  public static List<Double> deserialize(String s) {
+    try (
+        ByteArrayInputStream bais = new ByteArrayInputStream(Base64.getDecoder().decode(s));
+        ObjectInputStream ois = new ObjectInputStream(bais)
+    ) {
+      //noinspection unchecked
+      return (List<Double>) ois.readObject();
+    } catch (IOException | ClassNotFoundException e) {
+      L.severe("Cannot deserialize: %s".formatted(e));
+    }
+    return null;
+  }
+
+  public static String serialize(List<Double> values) {
+    try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+         ObjectOutputStream oos = new ObjectOutputStream(baos)
+    ) {
+      oos.writeObject(values);
+      return Base64.getEncoder().encodeToString(baos.toByteArray());
+    } catch (IOException e) {
+      L.severe("Cannot deserialize: %s".formatted(e));
+    }
+    return "";
   }
 
   public static void main(String[] args) {
@@ -181,35 +212,85 @@ public class Starter implements Runnable {
     try (Reader reader = new FileReader(inputFile)) {
       L.info("Reading input file %s".formatted(inputFile));
       CSVParser parser = CSVFormat.Builder.create().setDelimiter(';').setHeader().build().parse(reader);
-      //noinspection unchecked
       annotatedGenotypes = parser.stream()
-          .filter(r -> iterations.contains(Integer.parseInt(r.get("iterations"))))
-          .map(r -> new AnnotatedGenotype(
-              r.get("target"),
-              r.get("mapper"),
-              r.get("randomGenerator"),
-              Integer.parseInt(r.get("iterations")),
-              (List<Double>) javaDeserializer().apply(r.get("best→g")),
-              Double.parseDouble(r.get("best→fitness→vx"))
-          ))
+          .map(r -> {
+            String target;
+            if (parser.getHeaderNames().contains("solver.mapper.target")) {
+              target = r.get("solver.mapper.target");
+            } else {
+              target = VSR_TARGET_TEMPLATE
+                  .replace("%SHAPE%", r.get("solver.mapper.target.body.shape"))
+                  .replace("%FUNCTION%", r.get("solver.mapper.target.function"))
+                  .replaceFirst("free\\(s=([^)]*)\\)", "free(s=\"$1\")")
+                  .replaceAll("\\s", "");
+            }
+            return new AnnotatedGenotype(
+                target,
+                Integer.parseInt(r.get("randomGenerator.seed")),
+                Integer.parseInt(r.get("iterations")),
+                deserialize(r.get("best→genotype→base64")),
+                Double.parseDouble(r.get("best→fitness→s.task.l.xVelocity"))
+            );
+          })
           .toList();
       L.info("%d target genotypes found for iterations %s".formatted(annotatedGenotypes.size(), iterations));
     } catch (IOException e) {
       throw new IllegalArgumentException("Cannot open input file %s: %s".formatted(inputFile, e));
     }
-    //prepare engine and executor and qExtractor
+    //show info and domains by target
+    annotatedGenotypes.stream()
+        .map(AnnotatedGenotype::target)
+        .distinct()
+        .forEach(t -> {
+          List<Integer> gSizes = annotatedGenotypes.stream()
+              .filter(ag -> ag.target().equals(t))
+              .map(ag -> ag.sourceGenotype().size())
+              .distinct()
+              .toList();
+          List<DoubleRange> genotypeRanges = annotatedGenotypes.stream()
+              .filter(ag -> ag.target().equals(t))
+              .map(ag -> ag.sourceGenotype.stream().map(v -> new DoubleRange(v, v)).toList())
+              .reduce((rs1, rs2) -> IntStream.range(0, rs1.size()).mapToObj(i -> new DoubleRange(
+                  Math.min(rs1.get(i).min(), rs2.get(i).min()),
+                  Math.max(rs1.get(i).max(), rs2.get(i).max())
+              )).toList())
+              .orElseThrow();
+          DoubleRange enclosingRange = genotypeRanges.stream().reduce((r1, r2) -> new DoubleRange(
+              Math.min(r1.min(), r2.min()),
+              Math.max(r1.max(), r2.max())
+          )).orElseThrow();
+          DoubleRange averageRange = genotypeRanges.stream().reduce((r1, r2) -> new DoubleRange(
+              (r1.min() + r2.min()) / 2d,
+              (r1.max() + r2.max()) / 2d
+          )).orElseThrow();
+          System.out.printf(
+              """
+                  Target: %s
+                  Distinct genotype sizes: %s
+                  Enclosing genes range: [%+.3f,%+.3f]
+                  Average genes range: [%+.3f,%+.3f]
+                  """,
+              t,
+              gSizes,
+              enclosingRange.min(), enclosingRange.max(),
+              averageRange.min(), averageRange.max()
+          );
+        });
+    //prepare engine, executor, cFunction, task
     Supplier<Engine> engineSupplier = () -> ServiceLoader.load(Engine.class)
         .findFirst()
         .orElseThrow(() -> new RuntimeException("Cannot instantiate an engine"));
     ExecutorService executorService = Executors.newFixedThreadPool(nOfThreads);
-    @SuppressWarnings("unchecked") NamedFunction<Object, Double> qExtractorF =
-        (NamedFunction<Object, Double>) nb.build(qExtractor);
+    @SuppressWarnings("unchecked") Function<Object, Double> cFunction = (Function<Object, Double>) nb.build(C_FUNCTION);
+    @SuppressWarnings("unchecked") Task<Supplier<EmbodiedAgent>, ?> localTask =
+        (Task<Supplier<EmbodiedAgent>, ?>) nb.build(
+            task);
     RandomGenerator randomGenerator = new Random(randomSeed);
-    /*
-    Function<Object, String> serializer = SerializerBuilder.javaSerializer();
     //iterate over bests
     List<Future<Outcome>> futures = new ArrayList<>();
-    for (AnnotatedGenotype annotatedGenotype : annotatedGenotypes) {
+    for (AnnotatedGenotype annotatedGenotype : annotatedGenotypes.stream()
+        .filter(ag -> iterations.contains(ag.iteration))
+        .toList()) {
       for (int destinationIndex = 0; destinationIndex < nOfDestinations; destinationIndex = destinationIndex + 1) {
         int dI = destinationIndex;
         List<Double> unitDiff = randomUnitVector(annotatedGenotype.sourceGenotype().size(), randomGenerator);
@@ -217,16 +298,13 @@ public class Starter implements Runnable {
           int sI = stepIndex;
           double d = destinationDistance * (double) stepIndex / (double) nOfSteps;
           List<Double> genotype = dPoint(d, annotatedGenotype.sourceGenotype(), unitDiff);
-          Supplier<EmbodiedAgent> unmappedAgentSupplier = () -> (EmbodiedAgent) nb.build(annotatedGenotype.target());
-          @SuppressWarnings("unchecked") MapperBuilder<List<Double>, Supplier<EmbodiedAgent>> mapper =
-              (MapperBuilder<List<Double>, Supplier<EmbodiedAgent>>) nb.build(
-                  annotatedGenotype.mapper());
-          Supplier<EmbodiedAgent> agentSupplier = mapper.buildFor(unmappedAgentSupplier).apply(genotype);
-          @SuppressWarnings("unchecked") Task<Supplier<Agent>, ?> localTask =
-              (Task<Supplier<Agent>, ?>) nb.build(task);
+          @SuppressWarnings("unchecked") InvertibleMapper<List<Double>, Supplier<EmbodiedAgent>> mapper =
+              (InvertibleMapper<List<Double>, Supplier<EmbodiedAgent>>) nb.build(
+                  MAPPER_TEMPLATE.replace("%TARGET%", annotatedGenotype.target()));
+          Supplier<EmbodiedAgent> agentSupplier = mapper.apply(genotype);
           futures.add(executorService.submit(() -> {
-            Object taskOutcome = localTask.run(agentSupplier::get, engineSupplier.get());
-            return new Outcome(annotatedGenotype, dI, sI, d, genotype, qExtractorF.apply(taskOutcome));
+            Object taskOutcome = localTask.run(agentSupplier, engineSupplier.get());
+            return new Outcome(annotatedGenotype, dI, sI, d, genotype, cFunction.apply(taskOutcome));
           }));
         }
       }
@@ -241,16 +319,14 @@ public class Starter implements Runnable {
       );
       printer.printRecord(List.of(
           "target",
-          "mapper",
-          "randomGenerator",
+          "seed",
           "iteration",
-          "srcGenotype",
           "srcQ",
-          "genotype",
           "dstIndex",
           "stepIndex",
           "d",
-          "pointQ"
+          "pointQ",
+          "genotype"
       ));
     } catch (IOException e) {
       L.severe("Cannot open output file: %s".formatted(e));
@@ -261,7 +337,7 @@ public class Starter implements Runnable {
     futures.forEach(f -> {
       try {
         Outcome outcome = f.get();
-        L.info(("Outcome %d/%d for iteration %d, target %d, point %d found: " + qExtractorF.getFormat() + " vs. " + qExtractorF.getFormat()).formatted(
+        L.info("Outcome %d/%d for iteration %d, target %d, point %d found: %6.3f vs. %6.3f ".formatted(
             counter.incrementAndGet(),
             futures.size(),
             outcome.annotatedSourceGenotype().iteration(),
@@ -272,16 +348,14 @@ public class Starter implements Runnable {
         ));
         printer.printRecord(List.of(
             outcome.annotatedSourceGenotype().target(),
-            outcome.annotatedSourceGenotype().mapper(),
-            outcome.annotatedSourceGenotype().randomGenerator(),
+            outcome.annotatedSourceGenotype().seed(),
             outcome.annotatedSourceGenotype().iteration(),
-            serializer.apply(outcome.annotatedSourceGenotype().sourceGenotype()),
             outcome.annotatedSourceGenotype().q(),
-            serializer.apply(outcome.genotype()),
             outcome.destinationIndex(),
             outcome.stepIndex(),
             outcome.d(),
-            outcome.q()
+            outcome.q(),
+            serialize(outcome.genotype())
         ));
       } catch (InterruptedException | ExecutionException e) {
         L.severe("Cannot get result due to: %s".formatted(e));
@@ -290,7 +364,6 @@ public class Starter implements Runnable {
       }
     });
 
-     */
   }
 
 }
