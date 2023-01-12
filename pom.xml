@@ -25,7 +25,8 @@
 
     <name>robotevo2d-softness-impact</name>
     <description>
-        Experimental tool for investigating the impact of softness on the ruggedness of the fitness landscape in the evolutionary optimization of hybrid (soft/rigid) simulated robots.
+        Experimental tool for investigating the impact of softness on the ruggedness of the fitness landscape in the
+        evolutionary optimization of hybrid (soft/rigid) simulated robots.
     </description>
     <url>https://github.com/ericmedvet/2022-hybrid-robot-evolution-fitness-landscape-analysis</url>
 
@@ -46,8 +47,11 @@
     </developers>
 
     <scm>
-        <connection>scm:git:git://github.com/ericmedvet/2022-hybrid-robot-evolution-fitness-landscape-analysis.git</connection>
-        <developerConnection>scm:git:ssh://github.com:ericmedvet/2022-hybrid-robot-evolution-fitness-landscape-analysis.git</developerConnection>
+        <connection>scm:git:git://github.com/ericmedvet/2022-hybrid-robot-evolution-fitness-landscape-analysis.git
+        </connection>
+        <developerConnection>
+            scm:git:ssh://github.com:ericmedvet/2022-hybrid-robot-evolution-fitness-landscape-analysis.git
+        </developerConnection>
         <url>http://github.com/ericmedvet/2022-hybrid-robot-evolution-fitness-landscape-analysis/tree/main</url>
     </scm>
 
@@ -136,5 +140,18 @@
             </plugin>
         </plugins>
     </build>
+
+    <repositories>
+        <repository>
+            <id>ossrh-snapshot</id>
+            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
 
 </project>
