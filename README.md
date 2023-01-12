@@ -1,15 +1,13 @@
 # Experimental tools and artifacts for a research on: Fitness landscape analysis of hyrbid (soft/rigid) robot evolution
 
-This repo includes the tools and the artifacts needed for replicating the results of an experimental research on *the impact of softness on the ruggedness of the fitness landscape in the evolutionary optimization of hybrid (soft/rigid) legged robots*.
+This repo includes the tools and the artifacts needed for replicating the results of an experimental research on *the impact of softness on the ruggedness of the fitness landscape in the evolutionary optimization of hybrid (soft/rigid) simulated robots*.
 
 ## Dependencies
 
 This project depends on:
-- [2d-robot-evolution](https://github.com/ericmedvet/2d-robot-evolution) v0.3.2, which in turn depends on:
-  - [JGEA](https://github.com/ericmedvet/jgea) v2.2.1
-  - [2-D Multi Robot Simulator (2D-MR-Sim)](https://github.com/ericmedvet/2dmrsim) v0.6.3
-- Java SDK 18
-- R (with some appropriate tools)
+- [2d-robot-evolution](https://github.com/ericmedvet/2d-robot-evolution), which in turn depends on:
+- Java SDK 17
+- R (with some appropriate tools and packages)
 
 ## Overview of the experimental phases
 
@@ -17,11 +15,8 @@ This project depends on:
 
 After having cloned this repo, build it with:
 ```shell
-mvn clean install
+mvn clean package
 ```
-
-Note that the `2d-robot-evolution` Maven dependency is not on the central repository.
-Before building this project, you have to clone `2d-robot-evolution` (the proper release) on your machine and build it with `mvn clean install`.
 
 ### Phase 1: evolution
 

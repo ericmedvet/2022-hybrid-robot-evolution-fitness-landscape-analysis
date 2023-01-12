@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2022 eric
+  ~ Copyright 2023 eric
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@
 
     <dependencies>
         <dependency>
-            <groupId>it.units.erallab</groupId>
+            <groupId>io.github.ericmedvet</groupId>
             <artifactId>robotevo2d.main</artifactId>
             <version>${twodrobevo.version}</version>
         </dependency>

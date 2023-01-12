@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <!--
-  ~ Copyright 2022 eric
+  ~ Copyright 2023 eric
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -22,6 +22,35 @@
     <groupId>it.units.erallab</groupId>
     <artifactId>respap-hrefla</artifactId>
     <version>${revision}</version>
+
+    <name>robotevo2d-softness-impact</name>
+    <description>
+        Experimental tool for investigating the impact of softness on the ruggedness of the fitness landscape in the evolutionary optimization of hybrid (soft/rigid) simulated robots.
+    </description>
+    <url>https://github.com/ericmedvet/2022-hybrid-robot-evolution-fitness-landscape-analysis</url>
+
+    <licenses>
+        <license>
+            <name>The Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <name>Eric Medvet</name>
+            <email>eric.medvet@gmail.com</email>
+            <organization>Eric Medvet</organization>
+            <organizationUrl>https://github.com/ericmedvet</organizationUrl>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:git://github.com/ericmedvet/2022-hybrid-robot-evolution-fitness-landscape-analysis.git</connection>
+        <developerConnection>scm:git:ssh://github.com:ericmedvet/2022-hybrid-robot-evolution-fitness-landscape-analysis.git</developerConnection>
+        <url>http://github.com/ericmedvet/2022-hybrid-robot-evolution-fitness-landscape-analysis/tree/main</url>
+    </scm>
+
     <modules>
         <module>it.units.erallab.respap.hrefla.main</module>
         <module>it.units.erallab.respap.hrefla.assembly</module>
@@ -29,9 +58,9 @@
     <packaging>pom</packaging>
     <properties>
         <revision>0.0.1</revision>
-        <twodrobevo.version>0.3.3</twodrobevo.version>
+        <twodrobevo.version>1.1.1-SNAPSHOT</twodrobevo.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <jdk.version>18</jdk.version>
+        <jdk.version>17</jdk.version>
     </properties>
     <dependencies>
     </dependencies>
@@ -49,22 +78,15 @@
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-source-plugin</artifactId>
-                <version>3.2.1</version>
-                <executions>
-                    <execution>
-                        <id>attach-sources</id>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>3.4.2</version>
             </plugin>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>flatten-maven-plugin</artifactId>
                 <version>1.3.0</version>
                 <configuration>
+                    <flattenMode>ossrh</flattenMode>
                 </configuration>
                 <executions>
                     <!-- enable flattening -->
@@ -87,8 +109,30 @@
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <version>3.4.2</version>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>2.6</version>
+                <executions>
+                    <execution>
+                        <id>readme-md</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.basedir}</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>src/main/resources</directory>
+                                    <includes>
+                                        <include>README.md</include>
+                                    </includes>
+                                    <filtering>true</filtering>
+                                </resource>
+                            </resources>
+                            <encoding>UTF-8</encoding>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

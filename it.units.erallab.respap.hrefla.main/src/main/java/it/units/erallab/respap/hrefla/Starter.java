@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 eric
+ * Copyright 2023 eric
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,26 +19,17 @@ package it.units.erallab.respap.hrefla;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
-import it.units.erallab.mrsim2d.builder.NamedBuilder;
-import it.units.erallab.mrsim2d.core.Agent;
-import it.units.erallab.mrsim2d.core.EmbodiedAgent;
-import it.units.erallab.mrsim2d.core.engine.Engine;
-import it.units.erallab.mrsim2d.core.tasks.Task;
-import it.units.erallab.robotevo2d.main.builder.MapperBuilder;
-import it.units.erallab.robotevo2d.main.builder.SerializerBuilder;
-import it.units.erallab.robotevo2d.main.singleagent.PreparedNamedBuilder;
-import it.units.malelab.jgea.core.listener.NamedFunction;
+import io.github.ericmedvet.jgea.core.listener.NamedFunction;
+import io.github.ericmedvet.jnb.core.NamedBuilder;
+import io.github.ericmedvet.mrsim2d.core.engine.Engine;
+import io.github.ericmedvet.robotevo2d.main.PreparedNamedBuilder;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
-import org.apache.commons.csv.CSVPrinter;
 
 import java.io.*;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
@@ -215,6 +206,7 @@ public class Starter implements Runnable {
     @SuppressWarnings("unchecked") NamedFunction<Object, Double> qExtractorF =
         (NamedFunction<Object, Double>) nb.build(qExtractor);
     RandomGenerator randomGenerator = new Random(randomSeed);
+    /*
     Function<Object, String> serializer = SerializerBuilder.javaSerializer();
     //iterate over bests
     List<Future<Outcome>> futures = new ArrayList<>();
@@ -298,6 +290,8 @@ public class Starter implements Runnable {
         L.severe("Cannot print result due to: %s".formatted(e));
       }
     });
+
+     */
   }
 
 }
