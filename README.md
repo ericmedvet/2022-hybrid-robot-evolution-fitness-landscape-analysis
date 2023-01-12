@@ -36,7 +36,7 @@ java -cp "../io.github.ericmedvet.respap.hrefla.assembly/target/respap-hrefla.as
 The param `70` is for the number of concurrent threads to be used.
 It is reasonable to set a number that is equal to the number of cores on your machine.
 
-Running this experiments on our machine (Intel(R) Xeon(R) W-2295 CPU @ 3.00GHz with 64GB RAM) took approx 72h.
+Running each one of these experiments on our machine (Intel(R) Xeon(R) W-2295 CPU @ 3.00GHz with 64GB RAM) took approx 72h.
 
 The outcome of the experiments are the CSV files named [`phase-1/best-walker-3chunks-6x.csv`](phase-1/best-walker-3chunks-6x.csv) and [`phase-1/best-hybrid-vsr.csv`](phase-1/best-hybrid-vsr.csv).
 
