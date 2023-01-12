@@ -45,7 +45,7 @@ The outcome of the experiment is the CSV file named [`sections.txt`](phase-2/sec
 
 ```shell
 cd phase-2
-java -cp "../it.units.erallab.respap.hrefla.assembly/target/respap-hrefla.assembly-0.0.1-bin/modules/*" it.units.erallab.respap.hrefla.Starter -if ../phase-1/results-evo.txt -of sections.txt -d 0.25 -i 1,100,199 -nd 10 -np 25 --nOfThreads 70 --qExtractor 'e.locomotionXVelocity()' --task 's.task.locomotion(terrain=s.t.flat();duration=45)'
+java -cp "../it.units.erallab.respap.hrefla.assembly/target/respap-hrefla.assembly-0.0.1-bin/modules/*" io.github.ericmedvet.respap.hrefla.Starter -if ../phase-1/results-evo.txt -of sections.txt -d 0.25 -i 1,100,199 -nd 10 -np 25 --nOfThreads 70 --qExtractor 'e.locomotionXVelocity()' --task 's.task.locomotion(terrain=s.t.flat();duration=45)'
 ```
 
 ### Phase 3: data analysis

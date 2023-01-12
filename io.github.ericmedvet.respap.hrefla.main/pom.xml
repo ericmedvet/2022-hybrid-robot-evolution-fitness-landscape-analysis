@@ -19,7 +19,7 @@
          xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <groupId>it.units.erallab</groupId>
+        <groupId>io.github.ericmedvet</groupId>
         <artifactId>respap-hrefla</artifactId>
         <version>${revision}</version>
     </parent>

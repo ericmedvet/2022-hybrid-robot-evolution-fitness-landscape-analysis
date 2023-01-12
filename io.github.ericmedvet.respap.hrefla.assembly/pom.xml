@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2022 eric
+  ~ Copyright 2023 eric
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@
          xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <groupId>it.units.erallab</groupId>
+        <groupId>io.github.ericmedvet</groupId>
         <artifactId>respap-hrefla</artifactId>
         <version>${revision}</version>
     </parent>
@@ -30,7 +30,7 @@
 
     <dependencies>
         <dependency>
-            <groupId>it.units.erallab</groupId>
+            <groupId>io.github.ericmedvet</groupId>
             <artifactId>respap-hrefla.main</artifactId>
             <version>${revision}</version>
         </dependency>
@@ -49,7 +49,6 @@
                         <phase>package</phase>
                         <configuration>
                             <descriptors>
-                                <descriptor>zip-assembly.xml</descriptor>
                                 <descriptor>dir-assembly.xml</descriptor>
                             </descriptors>
                         </configuration>

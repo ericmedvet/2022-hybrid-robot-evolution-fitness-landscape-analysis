@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package it.units.erallab.respap.hrefla;
+package io.github.ericmedvet.respap.hrefla;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
@@ -109,25 +109,6 @@ public class Starter implements Runnable {
       double q
   ) {}
 
-
-  public static void main(String[] args) {
-    try {
-      Starter starter = new Starter();
-      JCommander.newBuilder()
-          .addObject(starter)
-          .build()
-          .parse(args);
-      starter.run();
-    } catch (ParameterException e) {
-      e.usage();
-      L.severe(String.format("Cannot read command line options: %s", e));
-      System.exit(-1);
-    } catch (RuntimeException e) {
-      L.severe(e.getClass().getSimpleName() + ": " + e.getMessage());
-      System.exit(-1);
-    }
-  }
-
   private static List<Double> dPoint(double d, List<Double> src, List<Double> direction) {
     if (src.size() != direction.size()) {
       throw new IllegalArgumentException("Vectors should have the same length: got %d and %d".formatted(
@@ -165,6 +146,24 @@ public class Starter implements Runnable {
       }
       return null;
     };
+  }
+
+  public static void main(String[] args) {
+    try {
+      Starter starter = new Starter();
+      JCommander.newBuilder()
+          .addObject(starter)
+          .build()
+          .parse(args);
+      starter.run();
+    } catch (ParameterException e) {
+      e.usage();
+      L.severe(String.format("Cannot read command line options: %s", e));
+      System.exit(-1);
+    } catch (RuntimeException e) {
+      L.severe(e.getClass().getSimpleName() + ": " + e.getMessage());
+      System.exit(-1);
+    }
   }
 
   private static List<Double> randomUnitVector(int p, RandomGenerator randomGenerator) {
