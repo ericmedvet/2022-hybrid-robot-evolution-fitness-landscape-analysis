@@ -61,6 +61,8 @@ cd phase-2
 java -cp "../io.github.ericmedvet.respap.hrefla.assembly/target/respap-hrefla.assembly-0.0.2-bin/modules/*" io.github.ericmedvet.respap.hrefla.Starter -if ../phase-1/best-hybrid-vsr.csv -of vsr-sections.csv -d 1.0 -i 0,49,99 -nd 5 -np 100 --nOfThreads 70 --task 's.task.locomotion(terrain=s.t.flat())'
 ```
 
+The two output files will be very large (~120MB for the legged, ~650MB for the VSRs): hence, they are not included in this repository.
+
 ### Phase 3: data analysis
 
 For the post-processing of the experimental data, including the generation of the figure, use the R notebook [`phase-3/analysis.Rmd`](phase-3/analysis.Rmd).

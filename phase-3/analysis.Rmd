@@ -9,7 +9,6 @@ require(skimr)
 
 ## Load and clean evolution data
 
-
 ### Load data
 ```{r}
 r.legged = read.csv2("../phase-1/best-walker-3chunks-6x.csv", dec=".", strip.white = T, stringsAsFactors = T)
@@ -23,13 +22,13 @@ r.legged$type = "legged"
 r.legged$softness = factor(str_count(r.legged$solver.mapper.target,"soft"))
 r.legged$ctrl = "open"
 r.vsr$type = "vsr"
-r.vsr$softness = factor((str_count(r.vsr$solver.mapper.target.body.shape,"s")-8)/2)
+r.vsr$softness = factor((str_count(str_extract(r.vsr$solver.mapper.target.body.shape, "s=\"?([rs.-]+)", group=1),"s")-4)/2)
 r.vsr$ctrl = "open"
 r.vsr$ctrl[r.vsr$solver.mapper.target.function=="s.f.mlp()"] = "closed"
 vars = c("type", "ctrl", "softness", "randomGenerator.seed", "iterations", "evals", "best.fitness.s.task.l.xVelocity")
-d = rbind(r.vsr[, vars], r.legged[, vars])
-d$type = factor(d$type)
-d$ctrl = factor(d$ctrl)
+d1 = rbind(r.vsr[, vars], r.legged[, vars])
+d1$type = factor(d1$type)
+d1$ctrl = factor(d1$ctrl)
 ```
 
 The **softness** is defined as follows:
@@ -46,47 +45,49 @@ For VSRs, it corresponds to:
 ## Evolution plot
 
 ```{r, fig.width=10, fig.height=4}
-d %>% group_by(type, ctrl, softness, iterations) %>% summarise_at(vars(best.fitness.s.task.l.xVelocity), list(Q1=~quantile(.,probs=0.25), median=median, Q3=~quantile(.,probs=0.75))) %>% ggplot(aes(iterations,median,col=softness)) + geom_line() + geom_ribbon(aes(ymin=Q1,ymax=Q3,fill=softness),alpha=0.2,color=NA) + facet_wrap(vars(type,ctrl), scales="free") + theme_light() + scale_color_brewer(palette="Set1") + scale_fill_brewer(palette="Set1")
+d1 %>% group_by(type, ctrl, softness, iterations) %>% summarise_at(vars(best.fitness.s.task.l.xVelocity), list(Q1=~quantile(.,probs=0.25), median=median, Q3=~quantile(.,probs=0.75))) %>% ggplot(aes(iterations,median,col=softness)) + geom_line() + geom_ribbon(aes(ymin=Q1,ymax=Q3,fill=softness),alpha=0.2,color=NA) + facet_wrap(vars(type,ctrl), scales="free") + theme_light() + scale_color_brewer(palette="Set1") + scale_fill_brewer(palette="Set1") + ylab("vx")
 ```
 
 ## Box plots
 
 ```{r, fig.width=10, fig.height=4}
-d %>% group_by(type, ctrl, softness, randomGenerator.seed) %>% arrange(iterations) %>% filter(row_number()==n()) %>% ungroup() %>% group_by(type, ctrl, softness) %>% ggplot(aes(x=softness,y=best.fitness.s.task.l.xVelocity)) + geom_boxplot() + facet_wrap(vars(type,ctrl), scales="free") + theme_light() + scale_color_brewer(palette="Set1") + scale_fill_brewer(palette="Set1")
+d1 %>% group_by(type, ctrl, softness, randomGenerator.seed) %>% arrange(iterations) %>% filter(row_number()==n()) %>% ungroup() %>% group_by(type, ctrl, softness) %>% ggplot(aes(x=softness,y=best.fitness.s.task.l.xVelocity)) + geom_boxplot() + facet_wrap(vars(type,ctrl), scales="free") + theme_light() + scale_color_brewer(palette="Set1") + scale_fill_brewer(palette="Set1") + ylab("vx")
 ```
 
+# Sections plots
 
-# OLD!
+## Load and clean section data
 
-## Sections plots
+### Load data
+```{r}
+s.legged = read.csv2("../phase-2/legged-sections.csv", dec=".", strip.white = T, stringsAsFactors = T, colClasses = c(NA, NA, NA, NA, NA, NA, NA, NA, "NULL"))
+s.vsr = read.csv2("../phase-2/vsr-sections.csv", dec=".", strip.white = T, stringsAsFactors = T, colClasses = c(NA, NA, NA, NA, NA, NA, NA, NA, "NULL"))
+```
 
-### Actual fitness average across destinations, randomSeed 
+### Clean
+Extract key factors.
+```{r}
+s.legged$type = "legged"
+s.legged$softness = factor(str_count(s.legged$target,"soft"))
+s.legged$ctrl = "open"
+s.vsr$type = "vsr"
+s.vsr$softness = factor((str_count(str_extract(s.vsr$target, "s=\"?([rs.-]+)", group=1),"s")-4)/2)
+s.vsr$ctrl = "open"
+s.vsr$ctrl[str_count(s.vsr$target, "s.f.mlp()")>0] = "closed"
+d2 = rbind(s.vsr, s.legged)
+d2$type = factor(d2$type)
+d2$ctrl = factor(d2$ctrl)
+```
+## Plots
+
+### Actual fitness vs. distance (for type+ctrl, iteration, softness)
 ```{r, fig.width=10, fig.height=4}
-gs1 = s %>% group_by(controller, nSoft, iteration, stepIndex,d) %>% summarise_at(vars(pointQ), list(Q1=~quantile(.,probs=0.25), median=median, Q3=~quantile(.,probs=0.75)))
-gs1 %>% ggplot(aes(d,median,col=nSoft)) + geom_line() + geom_ribbon(aes(ymin=Q1,ymax=Q3,fill=nSoft),alpha=0.2,color=NA) + facet_grid(factor(iteration)~controller) + theme_light() + scale_color_brewer(palette="Set1") + scale_fill_brewer(palette="Set1")
+d2 %>% group_by(type, ctrl, softness, iteration, stepIndex, d) %>% summarise_at(vars(pointQ), list(Q1=~quantile(.,probs=0.25), median=median, Q3=~quantile(.,probs=0.75))) %>% ggplot(aes(d,median,col=softness)) + geom_line() + geom_ribbon(aes(ymin=Q1,ymax=Q3,fill=softness),alpha=0.2,color=NA) + facet_grid(factor(iteration)~type+ctrl) + theme_light() + scale_color_brewer(palette="Set1") + scale_fill_brewer(palette="Set1") + ylab("vx")
 ```
 
-### Fitness relative variation average across destinations, randomSeed 
+### Fitness relative variation vs. distance (for type+ctrl, iteration, softness)
 ```{r, fig.width=10, fig.height=4}
-gs2 = s %>% group_by(controller, nSoft, iteration, stepIndex, d) %>% summarise_at(vars(rf), list(Q1=~quantile(.,probs=0.25), median=median, Q3=~quantile(.,probs=0.75)))
-gs2 %>% ggplot(aes(d,median,col=nSoft)) + geom_line() + geom_ribbon(aes(ymin=Q1,ymax=Q3,fill=nSoft),alpha=0.2,color=NA) + facet_grid(factor(iteration)~controller) + theme_light() + scale_color_brewer(palette="Set1") + scale_fill_brewer(palette="Set1") + ylim(c(-1,1))
-```
-
-### Fitness relative variation for iteration==100, randomSeed==0
-```{r, fig.width=10, fig.height=8}
-gs3 = s %>% filter(iteration==100 & randomSeed==0)
-gs3 %>% ggplot(aes(d,pointQ,col=nSoft)) + geom_line() + facet_grid(factor(dstIndex)~controller) + theme_light() + scale_color_brewer(palette="Set1") + scale_fill_brewer(palette="Set1")
-```
-```{r, fig.width=10, fig.height=8}
-gs3 = s %>% filter(iteration==199 & randomSeed==1)
-gs3 %>% ggplot(aes(d,f,col=factor(dstIndex))) + geom_line() + facet_grid(nSoft~controller) + theme_light() + scale_color_brewer(palette="Set1") + scale_fill_brewer(palette="Set1")
-```
-
-
-### Fitness relative variation for iteration==100
-```{r, fig.width=10, fig.height=8}
-gs4 = s %>% filter(iteration==100)
-gs4 %>% ggplot(aes(d,f,col=nSoft)) + geom_line(aes(linetype=controller)) + facet_grid(factor(dstIndex)~factor(randomSeed)) + theme_light() + scale_color_brewer(palette="Set1") + scale_fill_brewer(palette="Set1")
+d2 %>% mutate(rfv = (pointQ-srcQ)/srcQ) %>% group_by(type, ctrl, softness, iteration, stepIndex, d) %>% summarise_at(vars(rfv), list(Q1=~quantile(.,probs=0.25), median=median, Q3=~quantile(.,probs=0.75))) %>% ggplot(aes(d,median,col=softness)) + geom_line() + geom_ribbon(aes(ymin=Q1,ymax=Q3,fill=softness),alpha=0.2,color=NA) + facet_grid(factor(iteration)~type+ctrl) + theme_light() + scale_color_brewer(palette="Set1") + scale_fill_brewer(palette="Set1")  + ylab("rfv")
 ```
 
 ### Partial information count / number of changes (on relative fitness variation)
@@ -109,9 +110,13 @@ changes = function(values, epsilon) {
 }
 ```
 
+
+## Ruggedness vs. iteration (for type+ctrl, ruggeness-threshold, softness)
 ```{r, fig.width=10, fig.height=4}
-s %>% group_by(controller, nSoft, iteration, randomSeed, dstIndex) %>% summarise_at(vars(f), list(c10=~changes(.,0.10), c25=~changes(.,0.25), c50=~changes(.,0.50), c90=~changes(.,0.9))) %>% pivot_longer(c(c10,c25,c50,c90)) %>% group_by(controller,nSoft,iteration,name) %>% summarise_at(vars(value), list(Q1=~quantile(.,probs=0.25), median=median, Q3=~quantile(.,probs=0.75))) %>% ggplot(aes(x=iteration,y=median,color=nSoft)) + geom_line()  + geom_ribbon(aes(ymin=Q1,ymax=Q3,fill=nSoft),alpha=0.2,color=NA) + facet_grid(name~controller)  + theme_light() + scale_color_brewer(palette="Set1") + scale_fill_brewer(palette="Set1")
+d2 %>% mutate(rfv = (pointQ-srcQ)/srcQ) %>% group_by(type, ctrl, softness, iteration, seed, dstIndex) %>% summarise_at(vars(rfv), list(c05=~changes(.,0.05), c10=~changes(.,0.10), c25=~changes(.,0.25), c50=~changes(.,0.50))) %>% pivot_longer(c(c05,c10,c25,c50)) %>% group_by(type, ctrl,softness,iteration,name) %>% summarise_at(vars(value), list(Q1=~quantile(.,probs=0.25), median=median, Q3=~quantile(.,probs=0.75))) %>% ggplot(aes(x=iteration,y=median,color=softness)) + geom_line()  + geom_ribbon(aes(ymin=Q1,ymax=Q3,fill=softness),alpha=0.2,color=NA) + facet_grid(name~type+ctrl)  + theme_light() + scale_color_brewer(palette="Set1") + scale_fill_brewer(palette="Set1") + ylab("ruggedness")
 ```
+
+## Ruggedness vs. softness (for type+ctrl, ruggeness-threshold, iteration)
 ```{r, fig.width=10, fig.height=6}
-s %>% group_by(controller, nSoft, iteration, randomSeed, dstIndex) %>% summarise_at(vars(f), list(c10=~changes(.,0.10), c25=~changes(.,0.25), c50=~changes(.,0.50), c90=~changes(.,0.9))) %>% pivot_longer(c(c10,c25,c50,c90)) %>% group_by(controller,nSoft,iteration,name) %>% ggplot(aes(x=factor(iteration),y=value,color=nSoft)) + geom_boxplot() + facet_grid(name~controller)  + theme_light() + scale_color_brewer(palette="Set1") + scale_fill_brewer(palette="Set1")
+d2 %>% mutate(rfv = (pointQ-srcQ)/srcQ) %>% group_by(type, ctrl, softness, iteration, seed, dstIndex) %>% summarise_at(vars(rfv), list(c05=~changes(.,0.05), c10=~changes(.,0.10), c25=~changes(.,0.25), c50=~changes(.,0.50))) %>% pivot_longer(c(c05,c10,c25,c50)) %>% group_by(type, ctrl,softness,iteration,name) %>% summarise_at(vars(value), list(Q1=~quantile(.,probs=0.25), median=median, Q3=~quantile(.,probs=0.75))) %>% ggplot(aes(x=as.numeric(softness),y=median,color=name)) + geom_line() + geom_ribbon(aes(ymin=Q1,ymax=Q3,fill=name),alpha=0.2,color=NA) + facet_grid(factor(iteration)~type+ctrl)  + theme_light() + scale_color_brewer(palette="Set1") + scale_fill_brewer(palette="Set1") + ylab("ruggedness")
 ```
