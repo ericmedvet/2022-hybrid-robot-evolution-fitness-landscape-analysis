@@ -44,13 +44,13 @@ For VSRs, it corresponds to:
 
 ## Evolution plot
 
-```{r, fig.width=10, fig.height=4}
+```{r, fig.width=5, fig.height=2}
 d1 %>% group_by(type, ctrl, softness, iterations) %>% summarise_at(vars(best.fitness.s.task.l.xVelocity), list(Q1=~quantile(.,probs=0.25), median=median, Q3=~quantile(.,probs=0.75))) %>% ggplot(aes(iterations,median,col=softness)) + geom_line() + geom_ribbon(aes(ymin=Q1,ymax=Q3,fill=softness),alpha=0.2,color=NA) + facet_wrap(vars(type,ctrl), scales="free") + theme_light() + scale_color_brewer(palette="Set1") + scale_fill_brewer(palette="Set1") + ylab("vx")
 ```
 
 ## Box plots
 
-```{r, fig.width=10, fig.height=4}
+```{r, fig.width=5, fig.height=2}
 d1 %>% group_by(type, ctrl, softness, randomGenerator.seed) %>% arrange(iterations) %>% filter(row_number()==n()) %>% ungroup() %>% group_by(type, ctrl, softness) %>% ggplot(aes(x=softness,y=best.fitness.s.task.l.xVelocity)) + geom_boxplot() + facet_wrap(vars(type,ctrl), scales="free") + theme_light() + scale_color_brewer(palette="Set1") + scale_fill_brewer(palette="Set1") + ylab("vx")
 ```
 
@@ -78,15 +78,16 @@ d2 = rbind(s.vsr, s.legged)
 d2$type = factor(d2$type)
 d2$ctrl = factor(d2$ctrl)
 ```
+
 ## Plots
 
 ### Actual fitness vs. distance (for type+ctrl, iteration, softness)
-```{r, fig.width=10, fig.height=4}
+```{r, fig.width=5, fig.height=3}
 d2 %>% group_by(type, ctrl, softness, iteration, stepIndex, d) %>% summarise_at(vars(pointQ), list(Q1=~quantile(.,probs=0.25), median=median, Q3=~quantile(.,probs=0.75))) %>% ggplot(aes(d,median,col=softness)) + geom_line() + geom_ribbon(aes(ymin=Q1,ymax=Q3,fill=softness),alpha=0.2,color=NA) + facet_grid(factor(iteration)~type+ctrl) + theme_light() + scale_color_brewer(palette="Set1") + scale_fill_brewer(palette="Set1") + ylab("vx")
 ```
 
 ### Fitness relative variation vs. distance (for type+ctrl, iteration, softness)
-```{r, fig.width=10, fig.height=4}
+```{r, fig.width=5, fig.height=3}
 d2 %>% mutate(rfv = (pointQ-srcQ)/srcQ) %>% group_by(type, ctrl, softness, iteration, stepIndex, d) %>% summarise_at(vars(rfv), list(Q1=~quantile(.,probs=0.25), median=median, Q3=~quantile(.,probs=0.75))) %>% ggplot(aes(d,median,col=softness)) + geom_line() + geom_ribbon(aes(ymin=Q1,ymax=Q3,fill=softness),alpha=0.2,color=NA) + facet_grid(factor(iteration)~type+ctrl) + theme_light() + scale_color_brewer(palette="Set1") + scale_fill_brewer(palette="Set1")  + ylab("rfv")
 ```
 
@@ -112,11 +113,11 @@ changes = function(values, epsilon) {
 
 
 ## Ruggedness vs. iteration (for type+ctrl, ruggeness-threshold, softness)
-```{r, fig.width=10, fig.height=4}
+```{r, fig.width=5, fig.height=4}
 d2 %>% mutate(rfv = (pointQ-srcQ)/srcQ) %>% group_by(type, ctrl, softness, iteration, seed, dstIndex) %>% summarise_at(vars(rfv), list(c05=~changes(.,0.05), c10=~changes(.,0.10), c25=~changes(.,0.25), c50=~changes(.,0.50))) %>% pivot_longer(c(c05,c10,c25,c50)) %>% group_by(type, ctrl,softness,iteration,name) %>% summarise_at(vars(value), list(Q1=~quantile(.,probs=0.25), median=median, Q3=~quantile(.,probs=0.75))) %>% ggplot(aes(x=iteration,y=median,color=softness)) + geom_line()  + geom_ribbon(aes(ymin=Q1,ymax=Q3,fill=softness),alpha=0.2,color=NA) + facet_grid(name~type+ctrl)  + theme_light() + scale_color_brewer(palette="Set1") + scale_fill_brewer(palette="Set1") + ylab("ruggedness")
 ```
 
 ## Ruggedness vs. softness (for type+ctrl, ruggeness-threshold, iteration)
-```{r, fig.width=10, fig.height=6}
+```{r, fig.width=5, fig.height=3}
 d2 %>% mutate(rfv = (pointQ-srcQ)/srcQ) %>% group_by(type, ctrl, softness, iteration, seed, dstIndex) %>% summarise_at(vars(rfv), list(c05=~changes(.,0.05), c10=~changes(.,0.10), c25=~changes(.,0.25), c50=~changes(.,0.50))) %>% pivot_longer(c(c05,c10,c25,c50)) %>% group_by(type, ctrl,softness,iteration,name) %>% summarise_at(vars(value), list(Q1=~quantile(.,probs=0.25), median=median, Q3=~quantile(.,probs=0.75))) %>% ggplot(aes(x=as.numeric(softness),y=median,color=name)) + geom_line() + geom_ribbon(aes(ymin=Q1,ymax=Q3,fill=name),alpha=0.2,color=NA) + facet_grid(factor(iteration)~type+ctrl)  + theme_light() + scale_color_brewer(palette="Set1") + scale_fill_brewer(palette="Set1") + ylab("ruggedness")
 ```
