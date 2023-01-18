@@ -363,7 +363,7 @@ public class Starter implements Runnable {
         L.severe("Cannot print result due to: %s".formatted(e));
       }
     });
-
+    executorService.shutdown();
   }
 
 }
