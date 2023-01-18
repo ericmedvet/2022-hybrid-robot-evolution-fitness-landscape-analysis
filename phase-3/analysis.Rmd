@@ -7,6 +7,22 @@ require(tidyverse)
 require(skimr)
 ```
 
+## Analysis of mutation average step size
+
+### Load data
+```{r}
+r.dist = read.table("mutation-distance.txt", dec=".", strip.white = T, stringsAsFactors = T, header = T)
+```
+
+### Average mutation step size vs. sigma (for genotype space dimension p)
+```{r, fig.width=5, fig.height=3}
+r.dist %>% ggplot(aes(x=sigma, y=d, col=factor(p))) + geom_line() + ylab("Average mutation step size")
+```
+### Average mutation step size vs. sigma (for genotype space dimension p)
+```{r, fig.width=5, fig.height=3}
+r.dist %>% mutate(rd = d/2/sqrt(p)) %>% ggplot(aes(x=sigma, y=rd, col=factor(p))) + geom_line() + ylab("Average mutation rel. step size")
+```
+
 ## Load and clean evolution data
 
 ### Load data

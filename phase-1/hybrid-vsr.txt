@@ -71,7 +71,7 @@ ea.experiment(
         ea.nf.bestFitness(f = ea.nf.f(outerF = s.task.l.xVelocity(); s = "%5.2f"));
         ea.nf.base64(f = ea.nf.genotype(individual = ea.nf.best()))
       ];
-      runKeys = ["solver.mapper.target.function"; "solver.mapper.target.body.shape"; "randomGenerator.seed"]
+      runKeys = ["solver.mapper.target"; "randomGenerator.seed"]
     )
   ]
 )
