@@ -7,6 +7,18 @@ require(tidyverse)
 require(skimr)
 ```
 
+## Toy problem: legged with p=2
+
+### Load data
+```{r}
+r.toy = read.csv2("../phase-2/complete-landscape-2-100.csv", dec=".", strip.white = T, stringsAsFactors = T)
+```
+
+### Fitness landscape
+```{r, fig.width=2.5, fig.height=2}
+r.toy %>% ggplot(aes(x=g0, y=g1, fill=q)) + geom_raster()
+```
+
 ## Analysis of mutation average step size
 
 ### Load data
